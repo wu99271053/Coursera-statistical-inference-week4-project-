@@ -1,0 +1,61 @@
+---
+title: "exp distribution simulation and tooth growth data analysis"
+author: "eric"
+date: "15/08/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(datasets)
+library(dplyr)
+```
+
+## Simulation
+
+We have a pool of exp distribution data. And we use bootstrapping to obtain 40 data, calculate the mean and the variance and repeat this process 1000 times. And then the distribution of the variance and mean data were plotted and a normal distribution with mean=5 was also plotted to see how much the mean distribution fitted .
+
+
+```{r simulation }
+set.seed(1000)
+simulate <- matrix(rexp(1000*40, 0.2), nrow = 1000, ncol = 40)
+simulatemean <-as.data.frame(apply(simulate, 1, mean))
+colnames(simulatemean)<-"simean"
+simulatevar<-as.data.frame(apply(simulate, 1, var))
+colnames(simulatevar)<-"simvar"
+
+ggplot(simulatemean,aes(x=simean))+
+  geom_histogram(aes(y =..density..),color="black", fill="white")+
+  geom_vline(aes(xintercept=5,color = "Theoretical Mean"), size=2)+
+  theme(legend.title=element_blank(),legend.position = "top",legend.background = element_blank())+
+  stat_function(fun = dnorm,args = list(mean = 5,sd = 1))
+
+
+ggplot(simulatevar,aes(x=simvar))+
+  geom_histogram(color="darkblue", fill="lightblue")+
+  geom_vline(aes(xintercept=1/0.04,color = "Theoretical Variance"), size=2)+
+  theme(legend.title=element_blank(),legend.position = "top",legend.background=element_blank())
+```
+## Data summary 
+
+we used Dplyr to see the relationship between teeth length, supplement type and supplement dose.we can see with the increase in the dose, two types of supplements can both increase the teeth length. 
+```{r data analysis}
+data<-ToothGrowth
+data%>%group_by(supp,dose)%>%summarise(mean(len))
+```
+
+
+## The efficacy of two supplement
+
+T-test was performed to see if there are significant difference between supplements given the same dose. 
+```{r }
+t.test(len ~ supp, paired = FALSE, var.equal = FALSE, data = ToothGrowth)
+t.test(len ~ supp, var.equal = F, data =filter(ToothGrowth,dose==0.5))
+t.test(len ~ supp, var.equal = F, data =filter(ToothGrowth,dose==1))
+t.test(len ~ supp, var.equal = F, data =filter(ToothGrowth,dose==2))
+```
+
+## Conclusion
+the low p value suggested that in dose of 1, two types of supplements had the similar effect on teeth growth. However, taking into consideration of other t-tests,these two supplement were more likely to have different effect on teeth growth. Further data analysis can use permutation to validate the results. 
+
